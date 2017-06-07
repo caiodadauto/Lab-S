@@ -1,0 +1,163 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     Nome: Caio Vinícius Dadauto                   %
+%     Número USP(código): 7994808                   %
+%     Curso: Laboratório de simulação e computação  %
+%     Turma: Noturno                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass [a4paper,10pt]{article}
+\newcommand{\n}[1]{\textbf{#1}}
+\newcommand{\e}[1]{\textcolor{red}{#1}}
+\linespread {1.5}
+\usepackage[brazilian]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{fancyhdr}
+\usepackage{verbatim}
+\usepackage{alltt}
+\usepackage{graphicx,xcolor}
+\usepackage{listings}
+\lstset{numbers=left,
+    stepnumber=1,
+    firstnumber=1,
+    numberstyle=\tiny,
+    extendedchars=false,
+    breaklines=flase,
+    tabsize=2,
+    showtabs=true,
+    tab=\textcolor{gray}{$\cdots$},
+    keywordstyle=\color{blue},
+    frame=tb,
+    basicstyle=\footnotesize,
+    stringstyle=\ttfamily,
+showstringspaces=false}
+\renewcommand{\lstlistingname}{Programa}
+\renewcommand{\lstlistlistingname}{Lista de Listagens}
+\usepackage[pdftex]{hyperref}
+\hypersetup{colorlinks,%
+linkcolor=red}
+
+\begin{document}
+\thispagestyle{fancy}
+\fancyhf{}
+\renewcommand{\footrulewidth}{0.0pt}
+\renewcommand{\headrulewidth}{0.0pt}
+\rhead{\bfseries {\scriptsize 7/06/2015}}
+\cfoot{\bfseries \thepage}
+
+\begin{flushleft}
+    \begin{tabular}{ l l }
+        \multirow{2}{*}{\rule{0.15\textwidth}{48pt}} & \hspace{-3.5mm}{\large Exercício de Programa 4:}\\[2mm] 
+                                                     & \hspace{-3.5mm}{\huge \n{Full Bayesian Significance Test}}\\[-2.85mm]
+                                                     & \hspace{-4.5mm}\rule{1.1\textwidth}{1.6pt}
+    \end{tabular}
+\end{flushleft}
+\begin{center}
+    \vspace{-2.5mm}
+    \hspace{10mm}{\small\emph{Instituto de Matemática e Estatística da Universidade de São Paulo}}\\[0.5cm]
+    \hspace{-5.5cm}\begin{tabular}{ l l }
+        \n{Por} & \\[-2mm]
+                & \hspace{-10mm}{\small Caio Vinícius Dadauto$\qquad$7994808}\\
+        \n{Professor} & \\[-2mm]
+                      & \hspace{-10mm}{\small Julio Michael Stern}\\[4mm]
+    \end{tabular}
+\end{center}
+\vspace{2cm}
+
+\section{O modelo}
+Seja o seguinte problema:
+\begin{eqnarray*}
+    \Theta & = & \{(\alpha, \beta, \gamma)\;\in\;]0, \infty[\;\mathrm{x}\;[1, \infty[\;\mathrm{x}\;[0, \infty[\}\\
+    \Theta_0 & = & \{(\alpha, \beta, \gamma)\;\in\;\Theta\;|\;\alpha = \rho\mu(\beta, \gamma)\}\\
+    f(\alpha, \beta, \gamma | D) & \propto & \prod_{i = 1}^n\omega_i(t_i|\alpha, \beta, \gamma)\prod_{j = 1}^mr_j(t_j|\alpha, \beta, \gamma)
+\end{eqnarray*}
+onde $\omega$ e $r$ são as funcões de likelihood que representam a distribuição de \mbox{Weibull}. O logaritimo dessa função é
+dada por:
+\begin{eqnarray}
+    \omega l_i & = & \log(\beta) + (\beta - 1)\log(t_i + \alpha) - \beta\log(\gamma) - ((t_i + \alpha)/\gamma)^{\beta} + (\alpha/\gamma)^{\beta}\\
+    rl_j      & = & -((t_j + \alpha)/\gamma)^{\beta} + (\alpha/\gamma)^{\beta}
+\end{eqnarray}
+de forma que a função $f$ passa a ser dada por $fl$, como se segue:
+\begin{eqnarray}
+    fl & = & \sum^n_{i =1}\omega l_i + \sum^m_{j = 0} rl_j
+\end{eqnarray}
+
+Por outro lado, assumiu-se para este modelo que a hipotese zero pode ser dada por:
+\begin{equation}
+    h(\alpha, \beta, \gamma) = \rho\gamma\Gamma(1 + 1/\beta) - \alpha = 0
+\end{equation}
+
+\section{Otimização}
+A etapa de otimização foi feita maximizando $fl$ sobre $\Theta_0$ sujeita a hipotese zero.
+Essa etapa foi implementada utilizando a função \textrm{fmincon()} do $matlab$. Onde
+o $\theta$ que maximiza $fl$ é denotado por $\theta^*$,onde $\phi = fl(\theta^*)$.
+Como esta função minimiza uma função dada, foi necessário minimizar $-fl$.
+A seguir é apresentada a implementação da hipotese zero:
+{\linespread{1.15}\lstinputlisting[language=octave, label=sqlselect, caption={Implementação da hipotese zero}]{con.m}}
+
+\section{Integração}
+A etapa de integração foi feita utilizando-se o metodo de Monte Carlo em $Hit or Miss$. Porém, para isso,
+foi necessário realizar certas mudanças de variáveis de forma a tornar os limites das integrais limitados. Pois
+a etapa de integração é dada por:
+\begin{equation}
+    k^* = \int_0^{\infty}\int_3^{4}\int_0^{\infty}f_{\phi}(\alpha,\beta,\gamma)\mathrm{d}\alpha\mathrm{d}\beta\mathrm{d}\gamma
+\end{equation}
+com as mudanças de variáveis a etapa pode ser reformulada da seguinte forma:
+\begin{equation}
+    k^* = \int_0^{\pi/2}\int_3^{4}\int_0^{\pi/2}f_{\phi}(\tan(a),b,\tan(c))(\sec(a)\sec(c))^2\mathrm{d}a\mathrm{d}b\mathrm{d}c
+\end{equation}
+onde a $f_{\phi}$ é dada por:
+\[
+    f_{\phi} = \left\{\begin{array}{l}
+                    0,\quad f(\theta) < \phi\\
+                    f(\theta),\quad \mathrm{c.c.}
+               \end{array}\right.
+\]
+
+A implementação de $fl$ é apresentada a seguir:
+{\linespread{1.15}\lstinputlisting[language=octave, label=sqlselect, caption={Implementação da hipotese zero}]{fun.m}}
+
+\section{Implementação}
+Segue, a implementação total do programa, a qual faz uso das duas funções apresentadas nas seções anteriores
+{\linespread{1.15}\lstinputlisting[language=octave, label=sqlselect, caption={Implementação da hipotese zero}]{ep4.m}}
+
+\subsection{Resultados}
+A tabela a seguir apresenta as valores de evidencia e de $\theta^*$, ou seja, $\alpha, \beta$ e $\gamma$ para dez valores
+de $\rho$ distintos com $t_i$'s e $t_j$'s pré-definidos.
+{\linespread{1}
+    \begin{center}
+        \begin{tabular}{c c c c c}
+            \toprule[0.11em]
+            \n{$\rho$} & \n{$ev$} & \n{$\alpha$} & \n{$\beta$} & \n{$\gamma$}\\
+            \toprule[0.11em]
+            0.05 & 0.9756 & 0.1116  &  3.0000  &  2.5004\\ 
+            \midrule
+            0.01 & 0.9603 & 0.0215  &  3.0000  &  2.4103\\
+            \midrule
+            0.2 & 0.9955 & 0.5112  &  3.0000  &  2.8624\\
+            \midrule
+            0.3 & 1 & 0.8427  &  3.0000  &  3.1458\\
+            \midrule
+            0.4 & 1 & 1.2781  &  3.3022  &  3.5621\\
+            \midrule
+            0.5 & 1 & 1.8780  &  3.8175  &  4.1547\\
+            \midrule
+            0.6 & 0.9986 & 2.6107  &  4.0000  &  4.8005\\
+            \midrule
+            0.7 & 0.9960 & 3.5135  &  4.0000  &  5.5376\\
+            \midrule
+            0.8 & 0.9911 & 4.6888  &  4.0000  &  6.4662\\
+            \midrule
+            0.9 & 0.9813 & 6.2326  &  4.0000  &  7.6402\\
+            \toprule[0.11em]
+        \end{tabular}
+\end{center}}
+
+\end{document}
